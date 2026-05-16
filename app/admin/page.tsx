@@ -19,7 +19,15 @@ export default function AdminPage() {
     setLoading(false)
   }
 
-  useEffect(() => { if (authed) load() }, [authed])
+useEffect(() => {
+  if (!authed) return
+  load()
+  const channel = supabase
+    .channel('admin-rides')
+    .on('postgres_changes', { event: '*', schema: 'public', table: 'rides' }, () => load())
+    .subscribe()
+  return () => { supabase.removeChannel(channel) }
+}, [authed])
 
   const update = async (id: string, patch: Partial<Ride>) => {
     await supabase.from('rides').update(patch).eq('id', id)
