@@ -27,7 +27,7 @@ Corporate taxi dispatch and ride-hailing platform developed by Demic Tours Afric
 
 Live system:
 
-https://demic-ride.vercel.app
+https://ride.demicafrica.com
 
 ---
 
