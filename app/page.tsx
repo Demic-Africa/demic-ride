@@ -48,8 +48,8 @@ export default function Home() {
         {/* Features */}
         <div className="grid-2" style={{ gap: '1.5rem', marginBottom: '4rem' }}>
           {[
-            { title: 'Instant Booking', body: 'Submit ride requests in under a minute. No app download required.' },
-            { title: 'Live Dispatch', body: 'Admin assigns drivers the moment a request lands in the queue.' },
+            { title: 'Instant Booking', body: 'Submit ride requests in under a minute. Available on web and mobile.' },
+            { title: 'Live Dispatch', body: 'Rides are automatically matched to the nearest available driver the moment a request lands.' },
             { title: 'Driver Updates', body: 'Drivers mark pickup and completion — full trip visibility.' },
             { title: 'Full Audit Trail', body: 'Every ride timestamped, every status change logged.' },
           ].map(f => (

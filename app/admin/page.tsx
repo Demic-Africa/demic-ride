@@ -6,6 +6,33 @@ import Link from 'next/link'
 const DRIVERS = ['Driver A', 'Driver B', 'Driver C', 'Driver D']
 const STATUSES = ['pending', 'assigned', 'picked_up', 'completed', 'cancelled'] as const
 
+function exportCSV(rides: Ride[]) {
+  const headers = ['ID', 'Passenger', 'Phone', 'Pickup', 'Destination', 'Date', 'Time', 'Status', 'Driver', 'Fare (KES)', 'Notes', 'Requested At', 'Updated At']
+  const rows = rides.map(r => [
+    r.id,
+    r.passenger,
+    r.phone,
+    r.pickup,
+    r.destination,
+    r.date,
+    r.time,
+    r.status,
+    r.driver || '',
+    r.fare || '',
+    r.notes || '',
+    new Date(r.created_at).toLocaleString('en-KE'),
+    r.updated_at ? new Date(r.updated_at).toLocaleString('en-KE') : '',
+  ])
+  const csv = [headers, ...rows].map(r => r.map(v => `"${v}"`).join(',')).join('\n')
+  const blob = new Blob([csv], { type: 'text/csv' })
+  const url = URL.createObjectURL(blob)
+  const a = document.createElement('a')
+  a.href = url
+  a.download = `demicride-rides-${new Date().toISOString().slice(0, 10)}.csv`
+  a.click()
+  URL.revokeObjectURL(url)
+}
+
 export default function AdminPage() {
   const [authed, setAuthed] = useState(false)
   const [pin, setPin] = useState('')
@@ -19,15 +46,15 @@ export default function AdminPage() {
     setLoading(false)
   }
 
-useEffect(() => {
-  if (!authed) return
-  load()
-  const channel = supabase
-    .channel('admin-rides')
-    .on('postgres_changes', { event: '*', schema: 'public', table: 'rides' }, () => load())
-    .subscribe()
-  return () => { supabase.removeChannel(channel) }
-}, [authed])
+  useEffect(() => {
+    if (!authed) return
+    load()
+    const channel = supabase
+      .channel('admin-rides')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'rides' }, () => load())
+      .subscribe()
+    return () => { supabase.removeChannel(channel) }
+  }, [authed])
 
   const update = async (id: string, patch: Partial<Ride>) => {
     await supabase.from('rides').update(patch).eq('id', id)
@@ -36,11 +63,15 @@ useEffect(() => {
 
   const filtered = filter === 'all' ? rides : rides.filter(r => r.status === filter)
 
+  const today = new Date().toISOString().slice(0, 10)
   const stats = {
     total: rides.length,
     pending: rides.filter(r => r.status === 'pending').length,
     active: rides.filter(r => ['assigned', 'picked_up'].includes(r.status)).length,
     done: rides.filter(r => r.status === 'completed').length,
+    today: rides.filter(r => r.status === 'completed' && r.updated_at?.slice(0, 10) === today).length,
+    revenue: rides.filter(r => r.status === 'completed' && r.fare)
+      .reduce((sum, r) => sum + (parseFloat(r.fare || '0') || 0), 0),
   }
 
   if (!authed) return (
@@ -81,10 +112,13 @@ useEffect(() => {
         <div className="nav-links">
           <a href="/book">Book</a>
           <a href="/driver">Driver</a>
-          <span
-            onClick={() => setAuthed(false)}
-            style={{ color: 'var(--muted)', fontSize: '0.875rem', cursor: 'pointer' }}
+          <button
+            onClick={() => exportCSV(filtered)}
+            style={{ background: 'none', border: '1px solid #333', color: 'var(--muted)', padding: '0.3rem 0.8rem', borderRadius: '3px', cursor: 'pointer', fontSize: '0.8rem' }}
           >
+            ↓ Export CSV
+          </button>
+          <span onClick={() => setAuthed(false)} style={{ color: 'var(--muted)', fontSize: '0.875rem', cursor: 'pointer' }}>
             Sign out
           </span>
         </div>
@@ -94,15 +128,17 @@ useEffect(() => {
         <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', marginBottom: '1.5rem', flexWrap: 'wrap', gap: '1rem' }}>
           <div>
             <h1 className="display" style={{ fontSize: '2.5rem' }}>OPERATIONS CONTROL</h1>
-            <p style={{ color: 'var(--muted)', fontSize: '0.8rem', marginTop: '0.25rem' }}>Live dispatch queue · {new Date().toLocaleDateString('en-KE', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}</p>
+            <p style={{ color: 'var(--muted)', fontSize: '0.8rem', marginTop: '0.25rem' }}>
+              Live dispatch queue · {new Date().toLocaleDateString('en-KE', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}
+            </p>
           </div>
           <button className="btn-ghost" onClick={load}>↻ Refresh</button>
         </div>
 
-        {/* Stats */}
-        <div className="grid-4" style={{ marginBottom: '1.5rem' }}>
+        {/* Stats row */}
+        <div className="grid-4" style={{ marginBottom: '0.75rem' }}>
           {[
-            ['Total', stats.total, 'var(--white)'],
+            ['Total Rides', stats.total, 'var(--white)'],
             ['Pending', stats.pending, 'var(--amber)'],
             ['Active', stats.active, '#60a5fa'],
             ['Completed', stats.done, 'var(--success)'],
@@ -112,6 +148,20 @@ useEffect(() => {
               <div style={{ color: 'var(--muted)', fontSize: '0.8rem' }}>{l as string}</div>
             </div>
           ))}
+        </div>
+
+        {/* Today's summary */}
+        <div className="grid-2" style={{ marginBottom: '1.5rem' }}>
+          <div className="card" style={{ textAlign: 'center' }}>
+            <div className="display" style={{ fontSize: '1.75rem', color: 'var(--success)' }}>{stats.today}</div>
+            <div style={{ color: 'var(--muted)', fontSize: '0.8rem' }}>Completed Today</div>
+          </div>
+          <div className="card" style={{ textAlign: 'center' }}>
+            <div className="display" style={{ fontSize: '1.75rem', color: 'var(--amber)' }}>
+              KES {stats.revenue.toLocaleString()}
+            </div>
+            <div style={{ color: 'var(--muted)', fontSize: '0.8rem' }}>Revenue Logged</div>
+          </div>
         </div>
 
         {/* Filter tabs */}
@@ -135,7 +185,6 @@ useEffect(() => {
             {filtered.map(ride => (
               <div key={ride.id} className="card" style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
 
-                {/* Header row */}
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: '0.5rem' }}>
                   <div>
                     <span style={{ fontWeight: 600 }}>{ride.passenger}</span>
@@ -144,25 +193,27 @@ useEffect(() => {
                   <span className={`badge badge-${ride.status}`}>{ride.status.replace('_', ' ')}</span>
                 </div>
 
-                {/* Route */}
                 <div style={{ color: 'var(--muted)', fontSize: '0.875rem' }}>
                   <strong style={{ color: 'var(--white)' }}>From:</strong> {ride.pickup}
                   &nbsp;→&nbsp;
                   <strong style={{ color: 'var(--white)' }}>To:</strong> {ride.destination}
                 </div>
 
-                {/* Meta */}
                 <div style={{ color: 'var(--muted)', fontSize: '0.8rem' }}>
-                  {ride.date} at {ride.time} · Requested {new Date(ride.created_at).toLocaleString('en-KE')}
-                  {ride.driver && <span style={{ color: '#60a5fa', marginLeft: '0.75rem' }}>· {ride.driver}</span>}
-                  {ride.fare && <span style={{ color: 'var(--amber)', marginLeft: '0.75rem' }}>· KES {ride.fare}</span>}
+                  Scheduled: {ride.date} at {ride.time}
+                  &nbsp;·&nbsp;
+                  Requested: {new Date(ride.created_at).toLocaleString('en-KE')}
+                  {ride.updated_at && ride.updated_at !== ride.created_at && (
+                    <span> · Updated: {new Date(ride.updated_at).toLocaleString('en-KE')}</span>
+                  )}
+                  {ride.driver && <span style={{ color: '#60a5fa', marginLeft: '0.5rem' }}>· {ride.driver}</span>}
+                  {ride.fare && <span style={{ color: 'var(--amber)', marginLeft: '0.5rem' }}>· KES {ride.fare}</span>}
                 </div>
 
                 {ride.notes && (
                   <div style={{ color: 'var(--muted)', fontSize: '0.875rem', fontStyle: 'italic' }}>"{ride.notes}"</div>
                 )}
 
-                {/* Controls */}
                 <div style={{ display: 'flex', gap: '0.75rem', flexWrap: 'wrap', alignItems: 'center' }}>
                   <select
                     value={ride.driver || ''}

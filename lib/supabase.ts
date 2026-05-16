@@ -18,4 +18,5 @@ export type Ride = {
   driver?: string
   fare?: string
   created_at: string
+  updated_at?: string
 }
