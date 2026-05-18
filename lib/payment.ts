@@ -1,8 +1,9 @@
-import Flutterwave from 'flutterwave-node-v3';
+import IntaSend from 'intasend-node';
 
-const flw = new Flutterwave(
-  process.env.FLUTTERWAVE_PUBLIC_KEY!,
-  process.env.FLUTTERWAVE_SECRET_KEY!
+const intasend = new IntaSend(
+  process.env.INTASEND_PUBLISHABLE_KEY!,
+  process.env.INTASEND_SECRET_KEY!,
+  false
 );
 
 export async function initiateMpesaPayment(params: {
@@ -12,26 +13,25 @@ export async function initiateMpesaPayment(params: {
   passengerName: string
 }) {
   try {
-    const response = await flw.MobileMoney.charge({
-      tx_ref: `ride-${params.bookingId}-${Date.now()}`,
+    const response = await intasend.collection().mpesaStkPush({
+      first_name: params.passengerName.split(' ')[0],
+      last_name: params.passengerName.split(' ').slice(1).join(' ') || 'Customer',
+      email: `${params.phone}@demicafrica.com`,
+      phone_number: params.phone,
       amount: params.amount,
       currency: 'KES',
-      phone_number: params.phone,
-      fullname: params.passengerName,
-      network: 'MPESA',
-      redirect_url: `${process.env.NEXT_PUBLIC_APP_URL}/booking/${params.bookingId}/confirm`
+      api_ref: `ride-${params.bookingId}`
     });
-    
-    return { success: true, transactionId: response.data?.id, status: response.data?.status };
+    return { success: true, invoiceId: response.invoice?.id, status: 'pending' };
   } catch (error: any) {
     return { success: false, error: error.message };
   }
 }
 
-export async function verifyPayment(transactionId: string) {
+export async function checkPaymentStatus(invoiceId: string) {
   try {
-    const response = await flw.Transaction.verify({ id: transactionId });
-    return { success: true, status: response.data?.status, amount: response.data?.amount };
+    const response = await intasend.collection().status(invoiceId);
+    return { success: true, status: response.invoice?.state };
   } catch (error: any) {
     return { success: false, error: error.message };
   }
