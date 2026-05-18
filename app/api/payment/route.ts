@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { initiateMpesaPayment, verifyPayment } from '@/lib/payment';
+import { initiateMpesaPayment, checkPaymentStatus } from '@/lib/payment';
 
 export async function POST(request: Request) {
   try {
@@ -10,8 +10,8 @@ export async function POST(request: Request) {
       return NextResponse.json(result);
     }
 
-    if (action === 'verify') {
-      const result = await verifyPayment(params.transactionId);
+    if (action === 'status') {
+      const result = await checkPaymentStatus(params.invoiceId);
       return NextResponse.json(result);
     }
 
