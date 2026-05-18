@@ -1,10 +1,12 @@
-import { createRouteHandlerClient } from '@supabase/auth-helpers-nextjs';
-import { cookies } from 'next/headers';
 import { NextResponse } from 'next/server';
+import { createClient } from '@supabase/supabase-js';
+
+const supabase = createClient(
+  process.env.NEXT_PUBLIC_SUPABASE_URL!,
+  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+);
 
 export async function POST(request: Request) {
-  const supabase = createRouteHandlerClient({ cookies });
-  
   try {
     const { bookingId, pickupLat, pickupLng } = await request.json();
     
@@ -25,7 +27,7 @@ export async function POST(request: Request) {
     let assignedDriver;
     let dispatchMethod;
     
-    if (pickupLat && pickupLng && drivers.some(d => d.current_lat && d.current_lng)) {
+    if (pickupLat && pickupLng && drivers.some((d: any) => d.current_lat && d.current_lng)) {
       assignedDriver = findNearestDriver(pickupLat, pickupLng, drivers);
       dispatchMethod = 'gps';
     } else {
@@ -66,7 +68,7 @@ export async function POST(request: Request) {
       method: dispatchMethod
     });
     
-  } catch (error) {
+  } catch (error: any) {
     return NextResponse.json({ 
       success: false, 
       error: error.message 
@@ -76,13 +78,13 @@ export async function POST(request: Request) {
 
 function findNearestDriver(pickupLat: number, pickupLng: number, drivers: any[]) {
   return drivers
-    .filter(d => d.current_lat && d.current_lng)
-    .map(d => ({
+    .filter((d: any) => d.current_lat && d.current_lng)
+    .map((d: any) => ({
       ...d,
       distance: Math.sqrt(
         Math.pow(d.current_lat - pickupLat, 2) + 
         Math.pow(d.current_lng - pickupLng, 2)
       )
     }))
-    .sort((a, b) => a.distance - b.distance)[0];
+    .sort((a: any, b: any) => a.distance - b.distance)[0];
 }
