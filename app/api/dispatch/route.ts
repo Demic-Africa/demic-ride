@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
+import { sendSMS, SMS_TEMPLATES } from '@/lib/notifications';
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -49,42 +50,38 @@ export async function POST(request: Request) {
     if (updateError) throw updateError;
     
     // 4. Update driver status
-    await supabase
-      .from('drivers')
-      .update({ status: 'busy' })
-      .eq('id', assignedDriver.id);
+    await supabase.from('drivers').update({ status: 'busy' }).eq('id', assignedDriver.id);
     
     // 5. Log the status change
-    await supabase
-      .from('status_logs')
-      .insert({
-        booking_id: bookingId,
-        status: 'dispatched'
-      });
+    await supabase.from('status_logs').insert({ booking_id: bookingId, status: 'dispatched' });
     
-    return NextResponse.json({
-      success: true,
-      driver: assignedDriver,
-      method: dispatchMethod
-    });
+    // 6. Send SMS to passenger
+    const { data: booking } = await supabase
+      .from('bookings')
+      .select('passenger_phone, passenger_name')
+      .eq('id', bookingId)
+      .single();
     
+    if (booking?.passenger_phone) {
+      await sendSMS(
+        booking.passenger_phone,
+        SMS_TEMPLATES.driverAssigned(
+          assignedDriver.name, 
+          assignedDriver.vehicle, 
+          assignedDriver.vehicle_plate
+        )
+      );
+    }
+    
+    return NextResponse.json({ success: true, driver: assignedDriver, method: dispatchMethod });
   } catch (error: any) {
-    return NextResponse.json({ 
-      success: false, 
-      error: error.message 
-    }, { status: 500 });
+    return NextResponse.json({ success: false, error: error.message }, { status: 500 });
   }
 }
 
 function findNearestDriver(pickupLat: number, pickupLng: number, drivers: any[]) {
   return drivers
     .filter((d: any) => d.current_lat && d.current_lng)
-    .map((d: any) => ({
-      ...d,
-      distance: Math.sqrt(
-        Math.pow(d.current_lat - pickupLat, 2) + 
-        Math.pow(d.current_lng - pickupLng, 2)
-      )
-    }))
+    .map((d: any) => ({ ...d, distance: Math.sqrt(Math.pow(d.current_lat - pickupLat, 2) + Math.pow(d.current_lng - pickupLng, 2)) }))
     .sort((a: any, b: any) => a.distance - b.distance)[0];
 }
