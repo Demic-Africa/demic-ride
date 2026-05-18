@@ -3,7 +3,11 @@ import { useState } from 'react'
 import { supabase } from '@/lib/supabase'
 import Link from 'next/link'
 import { useAuth } from '@/hooks/useAuth'
-import DriverMap from '@/components/DriverMap'
+import dynamic from 'next/dynamic'
+
+const DriverMap = dynamic(() => import('@/components/DriverMap'), {
+  ssr: false
+})
 
 export default function BookPage() {
   const { user } = useAuth()
