@@ -13,6 +13,7 @@
     "@capacitor/android": "^8.3.4",
     "@capacitor/cli": "^7.6.5",
     "@capacitor/core": "^8.3.4",
+    "@mapbox/search-js-react": "^1.5.1",
     "@supabase/supabase-js": "^2.105.4",
     "intasend-node": "^1.1.2",
     "leaflet": "^1.9.4",
@@ -20,6 +21,7 @@
     "react": "19.2.4",
     "react-dom": "19.2.4",
     "react-leaflet": "^5.0.0",
+    "resend": "^6.12.3",
     "twilio": "^6.0.2"
   },
   "devDependencies": {
