@@ -19,6 +19,7 @@ export function useAuth() {
     return () => subscription.unsubscribe()
   }, [])
 
+  // Phone OTP
   const signInWithOTP = async (phone: string) => {
     const { error } = await supabase.auth.signInWithOtp({ phone })
     return { success: !error, error: error?.message }
@@ -29,9 +30,30 @@ export function useAuth() {
     return { success: !error, user: data?.user, error: error?.message }
   }
 
+  // Social logins
+  const signInWithGoogle = async () => {
+    const { error } = await supabase.auth.signInWithOAuth({
+      provider: 'google',
+      options: {
+        redirectTo: `${window.location.origin}/auth/callback`
+      }
+    })
+    return { success: !error, error: error?.message }
+  }
+
+  const signInWithApple = async () => {
+    const { error } = await supabase.auth.signInWithOAuth({
+      provider: 'apple',
+      options: {
+        redirectTo: `${window.location.origin}/auth/callback`
+      }
+    })
+    return { success: !error, error: error?.message }
+  }
+
   const signOut = async () => {
     await supabase.auth.signOut()
   }
 
-  return { user, loading, signInWithOTP, verifyOTP, signOut }
+  return { user, loading, signInWithOTP, verifyOTP, signInWithGoogle, signInWithApple, signOut }
 }
