@@ -5,6 +5,12 @@ import { useParams } from 'next/navigation'
 import dynamic from 'next/dynamic'
 import Link from 'next/link'
 
+export const dynamic = 'force-static'
+
+export function generateStaticParams() {
+  return []
+}
+
 const DriverMap = dynamic(() => import('@/components/DriverMap'), { ssr: false })
 
 export default function TrackPage() {
