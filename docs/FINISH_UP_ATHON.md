@@ -65,3 +65,29 @@ is unreachable, the booking form leaks an internal message
 ("Check your Supabase env vars") to end users, with no graceful fallback
 or retry. 03-book-FAILED.png documents this. Hardening this error path is
 the first genuine Copilot-assisted improvement.
+
+## Screenshot Evidence Inventory
+
+### Before State (docs/screenshots/before/)
+| File | Content |
+|------|---------|
+| `01-home.png` | Home page |
+| `02-book-empty.png` | Empty booking form |
+| `03-book-FAILED.png` | **Critical:** Submission failure error |
+| `04-book-filled.png` | Filled booking form |
+| `05-admin-gate.png` | Admin dashboard |
+| `06-driver-empty.png` | Driver view |
+
+### After State (docs/screenshots/after/)
+| File | Content |
+|------|---------|
+| `12-booking-success-with-driver.png` | **Working booking** - Driver assigned (David Omondi, KDX 789C) |
+| `13-supabase-passenger-data.png` | Passenger data saved to Supabase |
+| `14-supabase-schedule-populated.png` | **Critical:** scheduled_date (2026-06-04), scheduled_time (16:33:00), notes (Airport Transfer) saved |
+
+### What Changed
+| Before | After |
+|--------|-------|
+| Booking submission failed | ✅ Driver assigned successfully |
+| Date/time/notes not saved | ✅ All three fields persist to database |
+| Missing scheduled columns | ✅ Columns added via migration |
