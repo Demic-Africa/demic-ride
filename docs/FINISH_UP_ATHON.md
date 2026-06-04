@@ -52,3 +52,16 @@ See `docs/copilot/` — each interaction captured as: prompt → suggestion → 
 | 06 | `06-driver-empty.png` | Driver view |
 
 All stored in `docs/screenshots/before/`
+
+## Resolution & correction (June 4, 2026)
+
+The booking failure was **not a code defect.** The Supabase project had
+auto-paused after free-tier inactivity; resuming it restored bookings
+(verified: /book now returns "RIDE REQUESTED"). No fix commit exists
+because no code changed.
+
+**The real gap this exposed (actual challenge work):** when the database
+is unreachable, the booking form leaks an internal message
+("Check your Supabase env vars") to end users, with no graceful fallback
+or retry. 03-book-FAILED.png documents this. Hardening this error path is
+the first genuine Copilot-assisted improvement.
