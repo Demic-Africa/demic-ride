@@ -11,21 +11,23 @@ const DriverMap = dynamic(() => import('@/components/DriverMap'), { ssr: false }
 export default function BookPage() {
   const { user } = useAuth()
   const [step, setStep] = useState<'form' | 'success'>('form')
-  const [form, setForm] = useState({ 
-    passenger: '', phone: '', pickup: '', destination: '', 
+  const [form, setForm] = useState({
+    passenger: '', phone: '', pickup: '', destination: '',
     pickup_lat: undefined as number | undefined, pickup_lng: undefined as number | undefined,
     destination_lat: undefined as number | undefined, destination_lng: undefined as number | undefined,
-    date: '', time: '', notes: '' 
+    date: '', time: '', notes: ''
   })
   const [status, setStatus] = useState<'idle' | 'loading' | 'error'>('idle')
+  const [errorMsg, setErrorMsg] = useState('Submission failed. Check your connection or try again.')
   const [bookingId, setBookingId] = useState<string | null>(null)
   const [assignedDriver, setAssignedDriver] = useState<{ id: string; name: string; vehicle: string; vehicle_plate: string } | null>(null)
 
   const set = (k: string, v: string) => setForm(f => ({ ...f, [k]: v }))
 
   const submitBooking = async () => {
-    if (!form.passenger || !form.phone || !form.pickup || !form.destination) {
-      alert('Please fill all required fields.')
+    if (!form.passenger || !form.phone || !form.pickup || !form.destination || !form.date || !form.time) {
+      setStatus('error')
+      setErrorMsg('Please fill all required fields, including date and time.')
       return
     }
     setStatus('loading')
@@ -41,7 +43,9 @@ export default function BookPage() {
         pickup_lng: form.pickup_lng || null,
         destination_lat: form.destination_lat || null,
         destination_lng: form.destination_lng || null,
-        passenger_id: user?.id || null,
+        scheduled_date: form.date,
+        scheduled_time: form.time,
+        notes: form.notes || null,
         status: 'pending'
       }])
       .select()
@@ -49,30 +53,37 @@ export default function BookPage() {
 
     if (error || !booking) {
       setStatus('error')
+      setErrorMsg('Submission failed. Check your connection or try again.')
       return
     }
 
     setBookingId(booking.id)
 
-    // Auto-dispatch immediately
-    const dispatchRes = await fetch('/api/dispatch', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ 
-        bookingId: booking.id, 
-        pickupLat: form.pickup_lat || null, 
-        pickupLng: form.pickup_lng || null 
+    // Auto-dispatch — failure here must not show a fake success screen.
+    try {
+      const dispatchRes = await fetch('/api/dispatch', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          bookingId: booking.id,
+          pickupLat: form.pickup_lat || null,
+          pickupLng: form.pickup_lng || null
+        })
       })
-    })
-
-    const dispatch = await dispatchRes.json()
-    if (dispatch.success) {
-      setAssignedDriver({
-        id: dispatch.driver.id,
-        name: dispatch.driver.name,
-        vehicle: dispatch.driver.vehicle,
-        vehicle_plate: dispatch.driver.vehicle_plate
-      })
+      if (!dispatchRes.ok) throw new Error('Dispatch request failed')
+      const dispatch = await dispatchRes.json()
+      if (dispatch.success && dispatch.driver) {
+        setAssignedDriver({
+          id: dispatch.driver.id,
+          name: dispatch.driver.name,
+          vehicle: dispatch.driver.vehicle,
+          vehicle_plate: dispatch.driver.vehicle_plate
+        })
+      }
+      // No driver assigned is still a valid booking — success screen handles null driver.
+    } catch {
+      // Booking saved, dispatch failed: send them to the success screen but
+      // without a driver. The ride is queued; admin can assign manually.
     }
 
     setStep('success')
@@ -88,8 +99,10 @@ export default function BookPage() {
       </nav>
       <main style={{ maxWidth: '520px', paddingTop: '5rem', textAlign: 'center' }}>
         <div style={{ fontSize: '3rem', marginBottom: '1rem' }}>✓</div>
-        <h2 className="display" style={{ fontSize: '2.5rem', color: 'var(--amber)', marginBottom: '1rem' }}>DRIVER ON THE WAY</h2>
-        {assignedDriver && (
+        <h2 className="display" style={{ fontSize: '2.5rem', color: 'var(--amber)', marginBottom: '1rem' }}>
+          {assignedDriver ? 'DRIVER ON THE WAY' : 'RIDE REQUESTED'}
+        </h2>
+        {assignedDriver ? (
           <>
             <div className="card" style={{ marginBottom: '2rem', textAlign: 'left' }}>
               <p style={{ fontWeight: 'bold', fontSize: '1.1rem' }}>{assignedDriver.name}</p>
@@ -103,6 +116,10 @@ export default function BookPage() {
               <DriverMap driverId={assignedDriver.id} pickupLat={form.pickup_lat} pickupLng={form.pickup_lng} />
             </div>
           </>
+        ) : (
+          <p style={{ color: 'var(--muted)', marginBottom: '2rem' }}>
+            Your request is in the queue. A driver will be assigned shortly.
+          </p>
         )}
         <div className="card" style={{ marginBottom: '2rem', background: 'rgba(255,215,0,0.08)', textAlign: 'left' }}>
           <p style={{ fontWeight: 600, marginBottom: '0.5rem' }}>💰 Payment</p>
@@ -147,21 +164,21 @@ export default function BookPage() {
             <div><label>Passenger Name *</label><input value={form.passenger} onChange={e => set('passenger', e.target.value)} placeholder="John Doe" /></div>
             <div><label>Phone Number *</label><input value={form.phone} onChange={e => set('phone', e.target.value)} placeholder="+254 7XX XXX XXX" /></div>
           </div>
-          
-          <LocationInput 
-            value={form.pickup} 
+
+          <LocationInput
+            value={form.pickup}
             onChange={(v, lat, lng) => setForm(f => ({ ...f, pickup: v, pickup_lat: lat, pickup_lng: lng }))}
             placeholder="e.g. Westlands Mall"
             label="Pickup Location *"
           />
-          
-          <LocationInput 
-            value={form.destination} 
+
+          <LocationInput
+            value={form.destination}
             onChange={(v, lat, lng) => setForm(f => ({ ...f, destination: v, destination_lat: lat, destination_lng: lng }))}
             placeholder="e.g. JKIA Terminal 1A"
             label="Destination *"
           />
-          
+
           <div className="grid-2">
             <div><label>Date *</label><input type="date" value={form.date} onChange={e => set('date', e.target.value)} /></div>
             <div><label>Time *</label><input type="time" value={form.time} onChange={e => set('time', e.target.value)} /></div>
@@ -170,7 +187,7 @@ export default function BookPage() {
           <button className="btn-primary" onClick={submitBooking} disabled={status === 'loading'} style={{ width: '100%', fontSize: '1rem', padding: '0.875rem' }}>
             {status === 'loading' ? 'Dispatching driver...' : 'Request Ride →'}
           </button>
-          {status === 'error' && <p style={{ color: 'var(--danger)', fontSize: '0.875rem' }}>Submission failed. Check your connection or try again.</p>}
+          {status === 'error' && <p style={{ color: 'var(--danger)', fontSize: '0.875rem' }}>{errorMsg}</p>}
         </div>
       </main>
     </>
