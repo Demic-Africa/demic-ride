@@ -19,7 +19,7 @@ Corporate taxi dispatch and ride-hailing platform developed by Demic Tours Afric
 - Next.js
 - Supabase
 - Tailwind CSS
-- Vercel
+- Render
 
 ---
 
