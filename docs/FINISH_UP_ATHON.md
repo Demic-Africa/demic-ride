@@ -1,6 +1,6 @@
 # GitHub Finish-Up-A-Thon Journal — Demic Ride
 
-**Repository:** https://github.com/Demic-Africa/demic-ride
+**Repository:** https://github.com/Demic-Africa/demic-ride/tree/finish-up-athon
 **Challenge period:** May 21 – June 7, 2026 (my work: June 4–5)
 **Participant:** @tourswithchris
 

@@ -5,6 +5,7 @@
 Built with Next.js, Supabase, and Tailwind CSS. Deployed on **Render**.
 
 🔗 **Live:** [ride.demicafrica.com](https://ride.demicafrica.com)
+🔗 **Challenge Branch:** [finish-up-athon](https://github.com/Demic-Africa/demic-ride/tree/finish-up-athon)
 
 ---
 
