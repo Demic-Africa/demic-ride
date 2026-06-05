@@ -8,19 +8,18 @@ on:
 jobs:
   build:
     runs-on: ubuntu-latest
-    environment: Production
 
     steps:
       - uses: actions/checkout@v4
       
       - uses: actions/setup-node@v4
         with:
-          node-version: 24  # Changed from 20 to 24
+          node-version: 24
           
       - uses: actions/setup-java@v4
         with:
           distribution: temurin
-          java-version: 17  # Changed from 21 to 17 (Android requirement)
+          java-version: 17  # Android requires Java 17
 
       - name: Install dependencies
         run: npm ci
@@ -38,8 +37,8 @@ jobs:
         run: |
           cd android
           chmod +x gradlew
-          ./gradlew assembleDebug --stacktrace
-          
+          ./gradlew assembleDebug
+
       - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
