@@ -16,6 +16,9 @@ Built with Next.js, Supabase, and Tailwind CSS. Deployed on **Render**.
 - Operations dashboard
 - Audit trail
 - Cloud-hosted infrastructure
+- **Telegram Alerts** - Real-time notifications for every booking
+- **Multi-language Support** - English, Swahili, Kikuyu, Luo
+- **Multi-channel Notifications** - SMS, Email, WhatsApp ready
 
 ---
 
