@@ -94,9 +94,6 @@ async function sendEmail(email: string, subject: string, booking: any, language:
       return { success: false, error: 'SendGrid not configured', channel: 'email' };
     }
 
-    // Build email content based on language
-    const emailContent = buildEmailContent(booking, language);
-    
     // You would implement actual SendGrid API call here
     console.log(`✅ Email sent to ${email}: ${subject} (${language})`);
     return { success: true, channel: 'email' };
