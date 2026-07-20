@@ -33,15 +33,19 @@ jobs:
       - name: Build Next.js
         run: npm run build
 
+      - name: Initialize Capacitor
+        run: |
+          npx cap init DemicRide com.demic.ride --web-dir=out
+
       - name: Create debug keystore
         run: |
-          mkdir -p android/app
           keytool -genkey -v -keystore debug.keystore -alias androiddebugkey -keyalg RSA -keysize 2048 -validity 10000 -storepass android -keypass android -dname "CN=Android Debug, O=Android, C=US"
 
+      - name: Add Android platform
+        run: npx cap add android
+
       - name: Sync Capacitor
-        run: |
-          npx cap add android
-          npx cap sync android
+        run: npx cap sync android
 
       - name: Build APK
         run: |
