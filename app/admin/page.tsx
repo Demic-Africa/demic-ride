@@ -41,7 +41,7 @@ export default function AdminPage() {
   const [loading, setLoading] = useState(true)
 
   const load = async () => {
-    const { data } = await supabase.from('rides').select('*').order('created_at', { ascending: false })
+    const { data } = await supabase.from('bookings').select('*').order('created_at', { ascending: false })
     setRides(data || [])
     setLoading(false)
   }
@@ -51,13 +51,13 @@ export default function AdminPage() {
     load()
     const channel = supabase
       .channel('admin-rides')
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'rides' }, () => load())
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'bookings' }, () => load())
       .subscribe()
     return () => { supabase.removeChannel(channel) }
   }, [authed])
 
   const update = async (id: string, patch: Partial<Ride>) => {
-    await supabase.from('rides').update(patch).eq('id', id)
+    await supabase.from('bookings').update(patch).eq('id', id)
     load()
   }
 
