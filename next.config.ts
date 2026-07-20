@@ -5,6 +5,10 @@ const nextConfig: NextConfig = {
   images: {
     unoptimized: true,
   },
+  // Only use export for mobile builds
+  ...(process.env.BUILD_TARGET === 'mobile' && {
+    output: 'export',
+  }),
 };
 
 export default nextConfig;
