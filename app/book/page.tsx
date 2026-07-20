@@ -1,10 +1,11 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 
 export default function BookPage() {
   const [loading, setLoading] = useState(false)
   const [message, setMessage] = useState('')
+  const [userLanguage, setUserLanguage] = useState('en')
   const [formData, setFormData] = useState({
     customerName: '',
     pickup: '',
@@ -12,9 +13,21 @@ export default function BookPage() {
     phone: '',
     email: '',
     notes: '',
-    amount: 0,
-    language: 'en'
+    amount: 0
   })
+
+  // Auto-detect user's language
+  useEffect(() => {
+    const browserLang = navigator.language || navigator.languages?.[0] || 'en'
+    const supportedLangs = ['en', 'sw', 'ki', 'lu']
+    let detectedLang = 'en'
+    
+    if (browserLang.startsWith('sw')) detectedLang = 'sw'
+    else if (browserLang.startsWith('ki')) detectedLang = 'ki'
+    else if (browserLang.startsWith('lu')) detectedLang = 'lu'
+    
+    setUserLanguage(detectedLang)
+  }, [])
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -25,14 +38,16 @@ export default function BookPage() {
       const response = await fetch('/api/bookings', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(formData)
+        body: JSON.stringify({
+          ...formData,
+          language: userLanguage  // Auto-detected language
+        })
       })
 
       const data = await response.json()
 
       if (response.ok) {
-        setMessage('✅ Booking confirmed! Check your Telegram for confirmation.')
-        // Reset form
+        setMessage('✅ Booking confirmed!')
         setFormData({
           customerName: '',
           pickup: '',
@@ -40,11 +55,10 @@ export default function BookPage() {
           phone: '',
           email: '',
           notes: '',
-          amount: 0,
-          language: 'en'
+          amount: 0
         })
       } else {
-        setMessage('❌ Error: ' + (data.error || 'Something went wrong'))
+        setMessage('❌ Error: ' + data.error)
       }
     } catch (error) {
       setMessage('❌ Network error. Please try again.')
@@ -53,6 +67,7 @@ export default function BookPage() {
     }
   }
 
+  // Restore your original design here
   return (
     <div className="max-w-md mx-auto p-6">
       <h1 className="text-2xl font-bold mb-6">Book a Ride</h1>
@@ -70,7 +85,7 @@ export default function BookPage() {
             type="text"
             required
             className="w-full p-2 border rounded"
-            placeholder="John Doe"
+            placeholder="Your name"
             value={formData.customerName}
             onChange={(e) => setFormData({...formData, customerName: e.target.value})}
           />
@@ -82,7 +97,7 @@ export default function BookPage() {
             type="text"
             required
             className="w-full p-2 border rounded"
-            placeholder="e.g., Nairobi CBD"
+            placeholder="Where are you?"
             value={formData.pickup}
             onChange={(e) => setFormData({...formData, pickup: e.target.value})}
           />
@@ -94,7 +109,7 @@ export default function BookPage() {
             type="text"
             required
             className="w-full p-2 border rounded"
-            placeholder="e.g., Jomo Kenyatta Airport"
+            placeholder="Where are you going?"
             value={formData.destination}
             onChange={(e) => setFormData({...formData, destination: e.target.value})}
           />
@@ -106,7 +121,7 @@ export default function BookPage() {
             type="tel"
             required
             className="w-full p-2 border rounded"
-            placeholder="+254700000000"
+            placeholder="+254XXXXXXXXX"
             value={formData.phone}
             onChange={(e) => setFormData({...formData, phone: e.target.value})}
           />
@@ -117,43 +132,18 @@ export default function BookPage() {
           <input
             type="email"
             className="w-full p-2 border rounded"
-            placeholder="john@example.com"
+            placeholder="your@email.com"
             value={formData.email}
             onChange={(e) => setFormData({...formData, email: e.target.value})}
           />
         </div>
 
         <div>
-          <label className="block text-sm font-medium">Language</label>
-          <select
-            className="w-full p-2 border rounded"
-            value={formData.language}
-            onChange={(e) => setFormData({...formData, language: e.target.value})}
-          >
-            <option value="en">English</option>
-            <option value="sw">Swahili</option>
-            <option value="ki">Kikuyu</option>
-            <option value="lu">Luo</option>
-          </select>
-        </div>
-
-        <div>
-          <label className="block text-sm font-medium">Amount (KES)</label>
-          <input
-            type="number"
-            className="w-full p-2 border rounded"
-            placeholder="0"
-            value={formData.amount}
-            onChange={(e) => setFormData({...formData, amount: Number(e.target.value)})}
-          />
-        </div>
-
-        <div>
-          <label className="block text-sm font-medium">Notes</label>
+          <label className="block text-sm font-medium">Notes (Optional)</label>
           <textarea
             className="w-full p-2 border rounded"
             rows={3}
-            placeholder="Any special requests..."
+            placeholder="Special requests..."
             value={formData.notes}
             onChange={(e) => setFormData({...formData, notes: e.target.value})}
           />
@@ -167,6 +157,12 @@ export default function BookPage() {
           {loading ? 'Booking...' : 'Book Ride'}
         </button>
       </form>
+      
+      <p className="text-xs text-gray-500 mt-4 text-center">
+        Language auto-detected: {userLanguage === 'sw' ? 'Swahili' : 
+                                 userLanguage === 'ki' ? 'Kikuyu' : 
+                                 userLanguage === 'lu' ? 'Luo' : 'English'}
+      </p>
     </div>
   )
 }
