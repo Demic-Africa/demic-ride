@@ -1,12 +1,9 @@
-import { CapacitorConfig } from '@capacitor/cli';
+import type { CapacitorConfig } from '@capacitor/cli';
 
 const config: CapacitorConfig = {
-  appId: 'com.demicafrica.ride',
-  appName: 'Demic Ride',
-  webDir: 'out',
-  server: {
-    androidScheme: 'https'
-  }
+  appId: 'com.demic.ride',
+  appName: 'DemicRide',
+  webDir: 'out'
 };
 
 export default config;
