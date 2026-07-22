@@ -6,19 +6,19 @@ import Link from 'next/link'
 const DRIVERS = ['Driver A', 'Driver B', 'Driver C', 'Driver D']
 const STATUSES = ['pending', 'assigned', 'picked_up', 'completed', 'cancelled'] as const
 
-function exportCSV(rides: Ride[]) {
+function exportCSV(rides: any[]) {
   const headers = ['ID', 'Passenger', 'Phone', 'Pickup', 'Destination', 'Date', 'Time', 'Status', 'Driver', 'Fare (KES)', 'Notes', 'Requested At', 'Updated At']
   const rows = rides.map(r => [
     r.id,
-    r.passenger,
-    r.phone,
-    r.pickup,
-    r.destination,
-    r.date,
-    r.time,
+    r.passenger_name,
+    r.passenger_phone,
+    r.pickup_address,
+    r.destination_address,
+    r.scheduled_date,
+    r.scheduled_time,
     r.status,
     r.driver || '',
-    r.fare || '',
+    r.amount?.toString() || '',
     r.notes || '',
     new Date(r.created_at).toLocaleString('en-KE'),
     r.updated_at ? new Date(r.updated_at).toLocaleString('en-KE') : '',
@@ -28,7 +28,7 @@ function exportCSV(rides: Ride[]) {
   const url = URL.createObjectURL(blob)
   const a = document.createElement('a')
   a.href = url
-  a.download = `demicride-rides-${new Date().toISOString().slice(0, 10)}.csv`
+  a.download = `demicride-bookings-${new Date().toISOString().slice(0, 10)}.csv`
   a.click()
   URL.revokeObjectURL(url)
 }
@@ -36,12 +36,12 @@ function exportCSV(rides: Ride[]) {
 export default function AdminPage() {
   const [authed, setAuthed] = useState(false)
   const [pin, setPin] = useState('')
-  const [rides, setRides] = useState<Ride[]>([])
+  const [rides, setRides] = useState<any[]>([])
   const [filter, setFilter] = useState('all')
   const [loading, setLoading] = useState(true)
 
   const load = async () => {
-    const { data } = await supabase.from('rides').select('*').order('created_at', { ascending: false })
+    const { data } = await supabase.from('bookings').select('*').order('created_at', { ascending: false })
     setRides(data || [])
     setLoading(false)
   }
@@ -50,14 +50,14 @@ export default function AdminPage() {
     if (!authed) return
     load()
     const channel = supabase
-      .channel('admin-rides')
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'rides' }, () => load())
+      .channel('admin-bookings')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'bookings' }, () => load())
       .subscribe()
     return () => { supabase.removeChannel(channel) }
   }, [authed])
 
-  const update = async (id: string, patch: Partial<Ride>) => {
-    await supabase.from('rides').update(patch).eq('id', id)
+  const update = async (id: string, patch: any) => {
+    await supabase.from('bookings').update(patch).eq('id', id)
     load()
   }
 
@@ -70,8 +70,8 @@ export default function AdminPage() {
     active: rides.filter(r => ['assigned', 'picked_up'].includes(r.status)).length,
     done: rides.filter(r => r.status === 'completed').length,
     today: rides.filter(r => r.status === 'completed' && r.updated_at?.slice(0, 10) === today).length,
-    revenue: rides.filter(r => r.status === 'completed' && r.fare)
-      .reduce((sum, r) => sum + (parseFloat(r.fare || '0') || 0), 0),
+    revenue: rides.filter(r => r.status === 'completed' && r.amount)
+      .reduce((sum, r) => sum + (parseFloat(r.amount) || 0), 0),
   }
 
   if (!authed) return (
@@ -138,7 +138,7 @@ export default function AdminPage() {
         {/* Stats row */}
         <div className="grid-4" style={{ marginBottom: '0.75rem' }}>
           {[
-            ['Total Rides', stats.total, 'var(--white)'],
+            ['Total Bookings', stats.total, 'var(--white)'],
             ['Pending', stats.pending, 'var(--amber)'],
             ['Active', stats.active, '#60a5fa'],
             ['Completed', stats.done, 'var(--success)'],
@@ -176,38 +176,38 @@ export default function AdminPage() {
           ))}
         </div>
 
-        {/* Ride list */}
+        {/* Bookings list */}
         {loading ? (
-          <p style={{ color: 'var(--muted)' }}>Loading rides...</p>
+          <p style={{ color: 'var(--muted)' }}>Loading bookings...</p>
         ) : (
           <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
-            {filtered.length === 0 && <p style={{ color: 'var(--muted)' }}>No rides in this category.</p>}
+            {filtered.length === 0 && <p style={{ color: 'var(--muted)' }}>No bookings in this category.</p>}
             {filtered.map(ride => (
               <div key={ride.id} className="card" style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
 
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: '0.5rem' }}>
                   <div>
-                    <span style={{ fontWeight: 600 }}>{ride.passenger}</span>
-                    <span style={{ color: 'var(--muted)', marginLeft: '0.75rem', fontSize: '0.875rem' }}>{ride.phone}</span>
+                    <span style={{ fontWeight: 600 }}>{ride.passenger_name}</span>
+                    <span style={{ color: 'var(--muted)', marginLeft: '0.75rem', fontSize: '0.875rem' }}>{ride.passenger_phone}</span>
                   </div>
                   <span className={`badge badge-${ride.status}`}>{ride.status.replace('_', ' ')}</span>
                 </div>
 
                 <div style={{ color: 'var(--muted)', fontSize: '0.875rem' }}>
-                  <strong style={{ color: 'var(--white)' }}>From:</strong> {ride.pickup}
+                  <strong style={{ color: 'var(--white)' }}>From:</strong> {ride.pickup_address}
                   &nbsp;→&nbsp;
-                  <strong style={{ color: 'var(--white)' }}>To:</strong> {ride.destination}
+                  <strong style={{ color: 'var(--white)' }}>To:</strong> {ride.destination_address}
                 </div>
 
                 <div style={{ color: 'var(--muted)', fontSize: '0.8rem' }}>
-                  Scheduled: {ride.date} at {ride.time}
+                  Scheduled: {ride.scheduled_date} at {ride.scheduled_time}
                   &nbsp;·&nbsp;
                   Requested: {new Date(ride.created_at).toLocaleString('en-KE')}
                   {ride.updated_at && ride.updated_at !== ride.created_at && (
                     <span> · Updated: {new Date(ride.updated_at).toLocaleString('en-KE')}</span>
                   )}
                   {ride.driver && <span style={{ color: '#60a5fa', marginLeft: '0.5rem' }}>· {ride.driver}</span>}
-                  {ride.fare && <span style={{ color: 'var(--amber)', marginLeft: '0.5rem' }}>· KES {ride.fare}</span>}
+                  {ride.amount && ride.amount > 0 && <span style={{ color: 'var(--amber)', marginLeft: '0.5rem' }}>· KES {ride.amount}</span>}
                 </div>
 
                 {ride.notes && (
@@ -226,9 +226,9 @@ export default function AdminPage() {
 
                   <input
                     placeholder="Fare (KES)"
-                    defaultValue={ride.fare || ''}
+                    defaultValue={ride.amount || ''}
                     style={{ width: '130px' }}
-                    onBlur={e => { if (e.target.value) update(ride.id, { fare: e.target.value }) }}
+                    onBlur={e => { if (e.target.value) update(ride.id, { amount: parseFloat(e.target.value) }) }}
                   />
 
                   {ride.status !== 'completed' && ride.status !== 'cancelled' && (
