@@ -3,10 +3,9 @@ import { useEffect, useState } from 'react'
 import { getSupabaseBrowser } from '@/lib/supabase/client'
 import Link from 'next/link'
 
-const DRIVERS = ['Driver A', 'Driver B', 'Driver C', 'Driver D']
 const STATUSES = ['pending', 'assigned', 'picked_up', 'completed', 'cancelled'] as const
 
-function exportCSV(rides: any[]) {
+function exportCSV(rides: any[], drivers: any[]) {
   const headers = ['ID', 'Passenger', 'Phone', 'Pickup', 'Destination', 'Date', 'Time', 'Status', 'Driver', 'Fare (KES)', 'Notes', 'Requested At', 'Updated At']
   const rows = rides.map(r => [
     r.id,
@@ -17,7 +16,7 @@ function exportCSV(rides: any[]) {
     r.scheduled_date,
     r.scheduled_time,
     r.status,
-    r.driver || '',
+      (drivers.find((d: any) => d.id === r.driver_id)?.name) || '',
     r.amount?.toString() || '',
     r.notes || '',
     new Date(r.created_at).toLocaleString('en-KE'),
@@ -38,12 +37,15 @@ export default function AdminPage() {
   const [authed, setAuthed] = useState(false)
   const [pin, setPin] = useState('')
   const [rides, setRides] = useState<any[]>([])
+  const [drivers, setDrivers] = useState<any[]>([])
   const [filter, setFilter] = useState('all')
   const [loading, setLoading] = useState(true)
 
   const load = async () => {
     const { data } = await supabase.from('bookings').select('*').order('created_at', { ascending: false })
     setRides(data || [])
+    const { data: driverRows } = await supabase.from('drivers').select('id, name, vehicle, vehicle_plate, status')
+    setDrivers(driverRows || [])
     setLoading(false)
   }
 
@@ -114,7 +116,7 @@ export default function AdminPage() {
           <a href="/book">Book</a>
           <a href="/driver">Driver</a>
           <button
-            onClick={() => exportCSV(filtered)}
+            onClick={() => exportCSV(filtered, drivers)}
             style={{ background: 'none', border: '1px solid #333', color: 'var(--muted)', padding: '0.3rem 0.8rem', borderRadius: '3px', cursor: 'pointer', fontSize: '0.8rem' }}
           >
             ↓ Export CSV
@@ -207,7 +209,10 @@ export default function AdminPage() {
                   {ride.updated_at && ride.updated_at !== ride.created_at && (
                     <span> · Updated: {new Date(ride.updated_at).toLocaleString('en-KE')}</span>
                   )}
-                  {ride.driver && <span style={{ color: '#60a5fa', marginLeft: '0.5rem' }}>· {ride.driver}</span>}
+                  {ride.driver_id && (() => {
+                    const d = drivers.find((x: any) => x.id === ride.driver_id)
+                    return d ? <span style={{ color: '#60a5fa', marginLeft: '0.5rem' }}>· {d.name}</span> : null
+                  })()}
                   {ride.amount && ride.amount > 0 && <span style={{ color: 'var(--amber)', marginLeft: '0.5rem' }}>· KES {ride.amount}</span>}
                 </div>
 
@@ -217,12 +222,22 @@ export default function AdminPage() {
 
                 <div style={{ display: 'flex', gap: '0.75rem', flexWrap: 'wrap', alignItems: 'center' }}>
                   <select
-                    value={ride.driver || ''}
-                    onChange={e => update(ride.id, { driver: e.target.value, status: 'assigned' })}
-                    style={{ width: 'auto', minWidth: '140px' }}
+                    value={ride.driver_id || ''}
+                    onChange={e => {
+                      const driverId = e.target.value
+                      const patch: any = driverId
+                        ? { driver_id: driverId, status: 'assigned' }
+                        : { driver_id: null, status: 'pending' }
+                      update(ride.id, patch)
+                    }}
+                    style={{ width: 'auto', minWidth: '180px' }}
                   >
                     <option value="">Assign driver...</option>
-                    {DRIVERS.map(d => <option key={d}>{d}</option>)}
+                    {drivers.map((d: any) => (
+                      <option key={d.id} value={d.id}>
+                        {d.name}{d.vehicle_plate ? ` — ${d.vehicle_plate}` : ''}
+                      </option>
+                    ))}
                   </select>
 
                   <input
