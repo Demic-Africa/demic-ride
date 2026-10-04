@@ -1,6 +1,16 @@
 // lib/notifications.ts
 import { translateText } from './translate';
 
+// --- integration status (logged once at server boot) ---
+if (typeof window === 'undefined') {
+  if (!process.env.TWILIO_ACCOUNT_SID || !process.env.TWILIO_AUTH_TOKEN) {
+    console.warn('[notifications] Twilio not configured — SMS + WhatsApp disabled')
+  }
+  if (!process.env.SENDGRID_API_KEY) {
+    console.warn('[notifications] SendGrid not configured — email notifications disabled')
+  }
+}
+
 // Use require for Twilio to avoid TypeScript issues
 const twilio = require('twilio');
 

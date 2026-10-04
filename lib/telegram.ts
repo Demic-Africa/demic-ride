@@ -1,4 +1,11 @@
 // lib/telegram.ts
+
+// --- integration status (logged once at server boot) ---
+if (typeof window === 'undefined') {
+  if (!process.env.TELEGRAM_BOT_TOKEN || !process.env.TELEGRAM_CHAT_ID) {
+    console.warn('[telegram] Telegram not configured — alerts disabled')
+  }
+}
 export async function sendTelegramAlert(booking: any) {
   const botToken = process.env.TELEGRAM_BOT_TOKEN;
   const chatId = process.env.TELEGRAM_CHAT_ID;
