@@ -45,3 +45,9 @@ yarn-error.log*
 *.tsbuildinfo
 next-env.d.ts
 .env.local
+
+# backups (avoid accidental commit of secrets/config)
+*.bak
+*.old
+*.orig
+*~
