@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import { supabase } from '@/lib/supabase'
+import { getSupabaseBrowser } from '@/lib/supabase/client'
 
 interface DashboardStats {
   todayBookings: number
@@ -13,6 +13,7 @@ interface DashboardStats {
 }
 
 export default function AdminAnalyticsPanel() {
+  const supabase = getSupabaseBrowser()
   const [stats, setStats] = useState<DashboardStats | null>(null)
   const [loading, setLoading] = useState(true)
 

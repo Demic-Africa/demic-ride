@@ -1,6 +1,20 @@
 import { Resend } from 'resend'
 
-const resend = new Resend(process.env.RESEND_API_KEY)
+// --- integration status (logged once at server boot) ---
+if (typeof window === 'undefined') {
+  if (!process.env.RESEND_API_KEY) {
+    console.warn('[receipt] Resend not configured — email receipts disabled')
+  }
+}
+
+let _resend: Resend | null = null;
+function getResend(): Resend {
+  if (_resend) return _resend;
+  const key = process.env.RESEND_API_KEY;
+  if (!key) throw new Error('[receipt] RESEND_API_KEY missing — cannot send')
+  _resend = new Resend(key);
+  return _resend;
+}
 
 export async function sendReceipt(params: {
   email: string
@@ -13,7 +27,7 @@ export async function sendReceipt(params: {
   date: string
 }) {
   try {
-    await resend.emails.send({
+    await getResend().emails.send({
       from: 'Demic Ride <receipts@ride.demicafrica.com>',
       to: params.email,
       subject: `Your Demic Ride Receipt — ${params.date}`,

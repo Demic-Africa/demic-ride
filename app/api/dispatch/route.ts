@@ -1,14 +1,10 @@
 import { NextResponse } from 'next/server';
-import { createClient } from '@supabase/supabase-js';
+import { getSupabaseServer } from '@/lib/supabase/server';
 import { sendSMS, SMS_TEMPLATES } from '@/lib/notifications';
-
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-);
 
 export async function POST(request: Request) {
   try {
+    const supabase = getSupabaseServer();
     const { bookingId, pickupLat, pickupLng } = await request.json();
     
     // 1. Fetch all available drivers

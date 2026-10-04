@@ -1,16 +1,12 @@
-import { createClient } from '@supabase/supabase-js'
 import { NextResponse } from 'next/server'
+import { getSupabaseServer } from '@/lib/supabase/server'
 import { sendTelegramAlert } from '@/lib/telegram'
 import { translateBookingDetails } from '@/lib/translate'
 import { sendMultiChannelNotification } from '@/lib/notifications'
 
-// Initialize Supabase client
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!
-const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-const supabase = createClient(supabaseUrl, supabaseKey)
-
 export async function GET() {
   try {
+    const supabase = getSupabaseServer()
     const { data: bookings, error } = await supabase
       .from('bookings')
       .select('*')
@@ -36,6 +32,7 @@ export async function GET() {
 
 export async function POST(request: Request) {
   try {
+    const supabase = getSupabaseServer()
     const bookingData = await request.json()
     console.log('📥 Received booking:', bookingData)
 

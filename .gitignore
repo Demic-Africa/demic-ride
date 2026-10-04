@@ -31,7 +31,12 @@ yarn-error.log*
 .pnpm-debug.log*
 
 # env files (can opt-in for committing if needed)
-.env*
+.env
+.env.local
+.env.*.local
+.env.production
+.env.development
+!.env.example
 
 # vercel
 .vercel
@@ -39,4 +44,9 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
-.env.local
+
+# backups (avoid accidental commit of secrets/config)
+*.bak
+*.old
+*.orig
+*~

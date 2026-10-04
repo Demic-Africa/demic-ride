@@ -1,6 +1,13 @@
 // lib/translate.ts
 // Simplified Google Translate integration
 
+// --- integration status (logged once at server boot) ---
+if (typeof window === 'undefined') {
+  if (!process.env.GOOGLE_APPLICATION_CREDENTIALS) {
+    console.warn('[translate] Google Translate not configured — using fallback dictionary')
+  }
+}
+
 // Supported languages for Kenya
 export const SUPPORTED_LANGUAGES = {
   en: 'English',

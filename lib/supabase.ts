@@ -1,22 +1,20 @@
-import { createClient } from '@supabase/supabase-js'
+/**
+ * @deprecated
+ * Compatibility shim. Import from '@/lib/supabase/client' or
+ * '@/lib/supabase/server' directly in new code.
+ *
+ * This file exists so pre-existing imports of `{ supabase }` from '@/lib/supabase'
+ * keep working. It lazily resolves to the browser client on first access.
+ */
 
-const url = process.env.NEXT_PUBLIC_SUPABASE_URL!
-const key = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+import { getSupabaseBrowser } from './supabase/client'
 
-export const supabase = createClient(url, key)
-
-export type Ride = {
-  id: string
-  passenger: string
-  phone: string
-  pickup: string
-  destination: string
-  date: string
-  time: string
-  notes?: string
-  status: string
-  driver?: string
-  fare?: string
-  created_at: string
-  updated_at?: string
-}
+// Lazy proxy: forwards property access to the singleton browser client.
+// First access triggers getSupabaseBrowser() which reads env at call-time.
+export const supabase = new Proxy({} as ReturnType<typeof getSupabaseBrowser>, {
+  get(_target, prop) {
+    const client = getSupabaseBrowser() as any
+    const value = client[prop]
+    return typeof value === 'function' ? value.bind(client) : value
+  },
+})
