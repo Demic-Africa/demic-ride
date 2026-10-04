@@ -1,5 +1,6 @@
 // app/auth/callback/route.ts
 import { NextResponse } from 'next/server'
+import { getSupabaseServer } from '@/lib/supabase/server'
 
 export const dynamic = 'force-dynamic'
 
@@ -13,20 +14,7 @@ export async function GET(request: Request) {
   }
 
   try {
-    // Check if we have the required environment variables
-    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
-    const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
-    
-    if (!supabaseUrl || !supabaseKey) {
-      console.warn('Supabase credentials missing during build')
-      // Don't fail the build, just redirect
-      return NextResponse.redirect(new URL('/', request.url))
-    }
-
-    // Dynamically import Supabase only when needed
-    const { createClient } = await import('@supabase/supabase-js')
-    const supabase = createClient(supabaseUrl, supabaseKey)
-    
+    const supabase = getSupabaseServer()
     const { error } = await supabase.auth.exchangeCodeForSession(code)
     
     if (error) {
