@@ -1,6 +1,6 @@
 'use client'
 import { useEffect, useState } from 'react'
-import { supabase, type Ride } from '@/lib/supabase'
+import { getSupabaseBrowser } from '@/lib/supabase/client'
 import Link from 'next/link'
 
 const DRIVERS = ['Driver A', 'Driver B', 'Driver C', 'Driver D']
@@ -34,6 +34,7 @@ function exportCSV(rides: any[]) {
 }
 
 export default function AdminPage() {
+  const supabase = getSupabaseBrowser()
   const [authed, setAuthed] = useState(false)
   const [pin, setPin] = useState('')
   const [rides, setRides] = useState<any[]>([])
